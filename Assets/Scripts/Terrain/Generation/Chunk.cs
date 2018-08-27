@@ -153,13 +153,13 @@ public class Chunk {
   public void initializeChunkBlocks() {
     blocks = new Block[CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_HEIGHT];
     Coordinate location = new Coordinate(0, 0, 0);
-    for (location.x = 0; location.x < CHUNK_DIAMETER; location.x++) {
+    /*for (location.x = 0; location.x < CHUNK_DIAMETER; location.x++) {
       for (location.y = 0; location.y < CHUNK_HEIGHT; location.y++) {
         for (location.z = 0; location.z < CHUNK_DIAMETER; location.z++) {
           blocks[location.x, location.y, location.z] = new Air(location, this);
         }
       }
-    }
+    }*/
   }
 
   /// <summary>
@@ -208,6 +208,10 @@ public class Chunk {
       && (blockLocation.y < CHUNK_HEIGHT && blockLocation.y >= 0)
       && (blockLocation.z < CHUNK_DIAMETER && blockLocation.z >= 0)
     ) {
+      if (blocks[blockLocation.x, blockLocation.y, blockLocation.z] == null) {
+        setBlock(new Air(blockLocation, this));
+        return blocks[blockLocation.x, blockLocation.y, blockLocation.z];
+      }
       return blocks[blockLocation.x, blockLocation.y, blockLocation.z];
     // if it's to the north
     } else if (blockLocation.z >= CHUNK_DIAMETER) {
@@ -273,6 +277,15 @@ public class Chunk {
       }
       oldblock.chunk.setBlock(newBlock);
     }
+  }
+
+  /// <summary>
+  /// Remove the block from the chunk, replacing it with air
+  /// </summary>
+  /// <param name="block">The block to remove</param>
+  public void destroyBlock(Block block) {
+    Block emptyBlock = new Air(block.location, this);
+    updateBlock(emptyBlock);
   }
 
   /// <summary>

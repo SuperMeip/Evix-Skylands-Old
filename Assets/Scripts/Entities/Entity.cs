@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 /// <summary>
 /// Anything in the world that moves
@@ -10,6 +11,11 @@ public class Entity {
   /// The world this player is in
   /// </summary>
   public World world { get; private set; }
+
+  /// <summary>
+  /// The world this player is in
+  /// </summary>
+  private Vector3 worldLocation;
 
   /// <summary>
   /// The location of the player in the world
@@ -49,8 +55,9 @@ public class Entity {
   /// Set the location of the entity
   /// </summary>
   /// <param name="location"></param>
-  public void updateLocation(Coordinate location) {
-    this.location = location;
+  public void updateWorldLocation(Vector3 location) {
+    worldLocation = location;
+    this.location = Coordinate.fromWorldPosition(location);
   }
 
   /// <summary>

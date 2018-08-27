@@ -124,50 +124,50 @@ public class ChunkMeshGenerator {
   }
 
   void CubeTop(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z));
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z));
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z) * bUnit);
     Cube(block);
   }
 
   void CubeNorth(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x, y, z + 1));
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y, z + 1) * bUnit);
     Cube(block);
   }
 
   void CubeEast(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1));
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1) * bUnit);
     Cube(block);
   }
 
   void CubeSouth(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x, y, z));
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z));
+    chunkMesh.vertices.Add(new Vector3(x, y, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y + 1, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z) * bUnit);
     Cube(block);
   }
 
   void CubeWest(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x, y, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x, y + 1, z));
-    chunkMesh.vertices.Add(new Vector3(x, y, z));
+    chunkMesh.vertices.Add(new Vector3(x, y, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y + 1, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y, z) * bUnit);
     Cube(block);
   }
 
   void CubeBottom(int x, int y, int z, Block block) {
-    chunkMesh.vertices.Add(new Vector3(x, y, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z));
-    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1));
-    chunkMesh.vertices.Add(new Vector3(x, y, z + 1));
+    chunkMesh.vertices.Add(new Vector3(x, y, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x + 1, y, z + 1) * bUnit);
+    chunkMesh.vertices.Add(new Vector3(x, y, z + 1) * bUnit);
     Cube(block);
   }
 }

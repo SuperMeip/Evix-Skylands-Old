@@ -31,4 +31,17 @@ public class ChunkController : MonoBehaviour {
     mesh.RecalculateNormals();
     col.sharedMesh = mesh;
   }
+
+  /// <summary>
+  /// Destroy the block at the given block location
+  /// </summary>
+  /// <param name="hitLocation"></param>
+  public void destroyBlock(Coordinate blockLocation) {
+    Blocks.Block blockToDestroy = chunk.getBlock(blockLocation.trimmed);
+    // replace with air in the model
+    chunk.destroyBlock(blockToDestroy);
+
+    // update the chunk mesh and re-render.
+    renderChunk();
+  }
 }

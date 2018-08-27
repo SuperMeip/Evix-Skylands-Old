@@ -25,6 +25,7 @@ public class WorldGenerator : MonoBehaviour {
   // Use this for initialization
   void Awake() {
     world = new World();
+    playerObject.transform.position = new Vector3(200 * World.BLOCK_SIZE, 70 * World.BLOCK_SIZE, 200 * World.BLOCK_SIZE);
     Player player1 = new Player(world, playerObject.transform.position.getCoordinate());
     playerObject.GetComponent<PlayerController>().player = player1;
     world.players[0] = player1;
@@ -36,7 +37,7 @@ public class WorldGenerator : MonoBehaviour {
   /// </summary>
   void createStartingIsland() {
     Island island = world.createNewIsland(new Coordinate(0, 0, 0));
-    GameObject startingIsland = Instantiate(islandObject, island.location.vec3 * World.WORLD_NEXUS_LENGTH, new Quaternion(), transform);
+    GameObject startingIsland = Instantiate(islandObject, island.location.vec3 * World.WORLD_NEXUS_LENGTH * World.BLOCK_SIZE, new Quaternion(), transform);
     IslandRenderer islandRenderer = startingIsland.GetComponent<IslandRenderer>();
     islandRenderer.island = island;
     playerObject.GetComponent<PlayerController>().currentRenderer = islandRenderer;

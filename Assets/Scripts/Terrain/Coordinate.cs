@@ -8,7 +8,7 @@ public enum Directions { north, east, south, west, up, down };
 public enum Corners { northEast, northWest, southEast, southWest };
 
 [Serializable]
-public class Coordinate {
+public struct Coordinate {
 
   /// <summary>
   /// All of the directions in order
@@ -32,46 +32,27 @@ public class Coordinate {
   public int z;
 
   /// <summary>
+  /// If this coordinate is valid and was properly initialized
+  /// </summary>
+  public bool isInitialized;
+
+  /// <summary>
   /// If this was initiated with a y coordinate
   /// </summary>
-  bool notMadeWithY = false;
+  bool notMadeWithY;
 
   /// <summary>
-  /// Create a 2d coordinate
+  /// This coordinate as a vector 2
   /// </summary>
-  /// <param name="x"></param>
-  /// <param name="z"></param>
-  public Coordinate(int x, int z) {
-    this.x = x;
-    this.z = z;
-    y = 0;
-    notMadeWithY = true;
+  public Vector2 vec2 {
+    get { return new Vector2(x, z); }
   }
 
   /// <summary>
-  /// Create a 3d coordinate
+  /// This coordinate as a vector 3
   /// </summary>
-  /// <param name="x"></param>
-  /// <param name="y"></param>
-  /// <param name="z"></param>
-  public Coordinate(int x, int y, int z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  /// <summary>
-  /// Create a 3d coordinate or 2d coordinate depending on notMadeWithY
-  /// </summary>
-  /// <param name="x"></param>
-  /// <param name="y"></param>
-  /// <param name="z"></param>
-  /// <param name="notMadeWithY">whether to make and use y in calculations for this coordinate</param>
-  private Coordinate(int x, int y, int z, bool notMadeWithY) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.notMadeWithY = notMadeWithY;
+  public Vector3 vec3 {
+    get { return new Vector3(x, y, z); }
   }
 
   /// <summary>
@@ -86,20 +67,6 @@ public class Coordinate {
         && z < Chunk.CHUNK_DIAMETER
         && z >= 0;
     }
-  }
-
-  /// <summary>
-  /// This coordinate as a vector 2
-  /// </summary>
-  public Vector2 vec2 {
-    get { return new Vector2(x, z); }
-  }
-
-  /// <summary>
-  /// This coordinate as a vector 3
-  /// </summary>
-  public Vector3 vec3 {
-    get { return new Vector3(x, y, z); }
   }
 
   /// <summary>
@@ -141,12 +108,80 @@ public class Coordinate {
   }
 
   /// <summary>
+  /// The center of the block at this coordinate
+  /// </summary>
+  public Vector3 blockCenter {
+    get {
+      return new Vector3(
+        x + World.BLOCK_SIZE / 2,
+        y + World.BLOCK_SIZE / 2,
+        z + World.BLOCK_SIZE / 2
+      );
+    }
+  }
+
+  /// <summary>
   /// Get a new object that's a copy of this coordinate
   /// </summary>
   public Coordinate copy {
     get {
       return new Coordinate(x, y, z, notMadeWithY);
     }
+  }
+
+  /// <summary>
+  /// Create a 2d coordinate
+  /// </summary>
+  /// <param name="x"></param>
+  /// <param name="z"></param>
+  public Coordinate(int x, int z) {
+    this.x = x;
+    this.z = z;
+    y = 0;
+    notMadeWithY = true;
+    isInitialized = true;
+  }
+
+  /// <summary>
+  /// Create a 3d coordinate
+  /// </summary>
+  /// <param name="x"></param>
+  /// <param name="y"></param>
+  /// <param name="z"></param>
+  public Coordinate(int x, int y, int z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    notMadeWithY = false;
+    isInitialized = true;
+  }
+
+  /// <summary>
+  /// Create a 3d coordinate or 2d coordinate depending on notMadeWithY
+  /// </summary>
+  /// <param name="x"></param>
+  /// <param name="y"></param>
+  /// <param name="z"></param>
+  /// <param name="notMadeWithY">whether to make and use y in calculations for this coordinate</param>
+  private Coordinate(int x, int y, int z, bool notMadeWithY) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.notMadeWithY = notMadeWithY;
+    isInitialized = true;
+  }
+
+  /// <summary>
+  /// Turn a world (rendered) location into a block coordinate
+  /// </summary>
+  /// <param name="worldPosition"></param>
+  /// <returns></returns>
+  public static Coordinate fromWorldPosition(Vector3 worldPosition) {
+    return new Coordinate(
+      (int)(worldPosition.x / World.BLOCK_SIZE),
+      (int)(worldPosition.y / World.BLOCK_SIZE),
+      (int)(worldPosition.z / World.BLOCK_SIZE)
+    );
   }
 
   /// <summary>
@@ -205,7 +240,10 @@ public class Coordinate {
   /// <param name="obj"></param>
   /// <returns></returns>
   public override bool Equals(object obj) {
-    Coordinate other = obj as Coordinate;
+    if (!(obj is Coordinate)) {
+      return false;
+    }
+    Coordinate other = (Coordinate)obj;
     return x == other.x && y == other.y && z == other.z;
   }
 

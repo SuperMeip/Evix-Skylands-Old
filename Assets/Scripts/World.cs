@@ -13,7 +13,7 @@ public class World {
   /// <summary>
   /// The world size of blocks
   /// </summary>
-  public const float BLOCK_SIZE = 1;
+  public const float BLOCK_SIZE = 1.0f;
 
   /// <summary>
   /// The distance in which islands may spawn.

@@ -120,7 +120,7 @@ public abstract class Level {
   }
 
   /// <summary>
-  /// Get the chunk given the world location
+  /// Get the chunk given the world (block) location
   /// </summary>
   /// <param name="location"></param>
   public Chunk chunkAtWorldLocation(Coordinate worldLocation) {
@@ -129,6 +129,14 @@ public abstract class Level {
       worldLocation.y - location.y * World.WORLD_NEXUS_LENGTH,
       worldLocation.z - location.z * World.WORLD_NEXUS_LENGTH
     ).chunkLocation);
+  }
+
+  /// <summary>
+  /// Get the block given the world (block) location
+  /// </summary>
+  /// <param name="location"></param>
+  public Blocks.Block blockAtWorldLocation(Coordinate worldLocation) {
+    return chunkAtWorldLocation(worldLocation).getBlock(worldLocation.trimmed);
   }
 
   /// <summary>

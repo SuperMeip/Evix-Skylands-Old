@@ -53,12 +53,11 @@ public class IslandRenderer : MonoBehaviour {
     // Empty the render queue
     if (chunkRenderQueue != null && chunkRenderQueue.Count > 0) {
       chunkRenderQueue.RemoveAll((ChunkMeshGenerator.ChunkMesh chunkMesh) => {
-        GameObject currentChunk = Instantiate(ChunkObject, chunkMesh.chunkLocation.vec3 * Chunk.CHUNK_DIAMETER, new Quaternion(), transform);
+        GameObject currentChunk = Instantiate(ChunkObject, chunkMesh.chunkLocation.vec3 * Chunk.CHUNK_DIAMETER * World.BLOCK_SIZE, new Quaternion(), transform);
         ChunkController chunkController = currentChunk.GetComponent<ChunkController>();
         chunkController.chunk = island.getChunk(chunkMesh.chunkLocation, true);
         chunkController.chunk.controller = chunkController;
         chunkController.renderChunk(chunkMesh);
-        Debug.Log("Rendered Chunk: " + chunkMesh.chunkLocation.ToString());
         return true;
       });
     }
@@ -71,7 +70,6 @@ public class IslandRenderer : MonoBehaviour {
   /// <param name="playerLocation"></param>
   public void renderAroundPlayer(Player player) {
     if (island == null) {
-      Debug.Log("No island to render");
       return;
     }
     island.generateAroundChunk(player.location.chunkLocation, World.ACTIVE_CHUNKS_RADIUS);
@@ -83,7 +81,7 @@ public class IslandRenderer : MonoBehaviour {
         for (location.z = player.chunk.location.z - World.ACTIVE_CHUNKS_RADIUS; location.z < player.chunk.location.z + World.ACTIVE_CHUNKS_RADIUS; location.z++) {
           Chunk newChunk = island.getChunk(location);
           if (newChunk != null && !newChunk.isEmpty && newChunk.hasBeenGenerated) {
-            GameObject chunkObject = Instantiate(ChunkObject, location.vec3 * Chunk.CHUNK_DIAMETER, new Quaternion(), transform);
+            GameObject chunkObject = Instantiate(ChunkObject, location.vec3 * Chunk.CHUNK_DIAMETER * World.BLOCK_SIZE, new Quaternion(), transform);
             ChunkController chunkController = chunkObject.GetComponent<ChunkController>();
             newChunk.controller = chunkController;
             chunkController.chunk = newChunk;
@@ -100,8 +98,7 @@ public class IslandRenderer : MonoBehaviour {
   /// </summary>
   /// <param name="columnLocation">The x and z of the column of chunks to render</param>
   public void renderChunkColumn(Coordinate columnLocation) {
-    if (island == null) {
-      Debug.Log("No island to render");
+    if (island == null || !columnLocation.isInitialized) {
       return;
     }
     Chunk chunk = island.getChunk(new Coordinate(columnLocation.x, 0, columnLocation.z));
@@ -124,13 +121,12 @@ public class IslandRenderer : MonoBehaviour {
   /// </summary>
   /// <param name="columnLocation">The x and z of the column of chunks to de-render</param>
   public void deRenderChunkColumn(Coordinate columnLocation) {
-    if (island == null || columnLocation == null) {
-      Debug.Log("No island to render");
+    if (island == null || !columnLocation.isInitialized) {
       return;
     }
     Coordinate location = new Coordinate(columnLocation.x, 0, columnLocation.z);
     for (location.y = island.heightInChunks - 1; location.y >= 0; location.y--) {
-      Chunk chunk = island.getChunk(location);
+      Chunk chunk = island.getChunk(location, false);
       if (chunk != null) {
         if (chunk.controller != null && chunk.isRendered) {
           chunk.isRendered = false;
@@ -163,7 +159,7 @@ public class IslandRenderer : MonoBehaviour {
     /// Generate just the mesh and uv values for the column of chunks
     /// </summary>
     protected override void ThreadFunction() {
-      if (columnLocation != null && island != null) {
+      if (columnLocation.isInitialized && island != null) {
         for (int y = island.heightInChunks - 1; y >= 0; y--) {
           Chunk chunk = island.getChunk(new Coordinate(columnLocation.x, y, columnLocation.z));
           if (chunk != null && !chunk.isEmpty && chunk.hasBeenGenerated && !chunk.hasBeenRendered) {
@@ -182,7 +178,7 @@ public class IslandRenderer : MonoBehaviour {
   /// <param name=""></param>
   /// <param name=""></param>
   public void renderPositionChange(Chunk newChunk, Chunk oldChunk) {
-    if (newChunk.level == island && oldChunk.level == island && oldChunk.location != newChunk.location) {
+    if (newChunk.level == island && oldChunk.level == island && !oldChunk.location.Equals(newChunk.location)) {
       Directions direction;
       // @todo: the parts of the switch below can probably just be brought up in here:
       if (newChunk.location.x < oldChunk.location.x) {

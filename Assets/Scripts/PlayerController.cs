@@ -78,6 +78,11 @@ public class PlayerController : MonoBehaviour {
     controller = GetComponent<CharacterController>();
     // Set target direction to the camera's initial orientation.
     facingDirection = headObject.transform.localRotation.eulerAngles;
+    selectBlockOutlineObject.transform.localScale = new Vector3(
+      World.BLOCK_SIZE + 0.01f,
+      World.BLOCK_SIZE + 0.01f,
+      World.BLOCK_SIZE + 0.01f
+    );
   }
 
   // Update is called once per frame
@@ -103,7 +108,7 @@ public class PlayerController : MonoBehaviour {
       controller.SimpleMove(move);
       // if we're on an island we want to check to see if we should render new chunks
       if (currentRenderer != null) {
-        player.updateLocation(gameObject.transform.position.getCoordinate());
+        player.updateWorldLocation(gameObject.transform.position);
         // if at any point we move onto a boundry of a chunk, check our position for rendering new chunks around us.
         Coordinate localPosition = transform.position.getCoordinate().trimmed;
         if (localPosition.x == 0 
@@ -174,11 +179,23 @@ public class PlayerController : MonoBehaviour {
     RaycastHit hit;
 
     if (Physics.Raycast(ray, out hit, 25)) {
-      selectBlockOutlineObject.transform.position = new Vector3(
-        (int)hit.point.x + 0.5f,
-        (int)hit.point.y + 0.5f,
-        (int)hit.point.z + 0.5f
-      );
+      Vector3 hitBlockPosition = hit.point + (hit.normal * -(World.BLOCK_SIZE / 2));
+      Coordinate hitCoordinate = Coordinate.fromWorldPosition(hitBlockPosition);
+      selectBlockOutlineObject.transform.position = hitCoordinate.blockCenter;
+      removeBlockOnClick(hitCoordinate);
+    }
+  }
+
+  /// <summary>
+  /// Remove a block on a button press
+  /// </summary>
+  /// <param name="hitBlock"></param>
+  void removeBlockOnClick(Coordinate hitCoordinate) {
+    if (Input.GetMouseButtonDown(0)) {
+      ChunkController chunkController = player.level.chunkAtWorldLocation(hitCoordinate).controller;
+      if (chunkController != null) {
+        player.level.chunkAtWorldLocation(hitCoordinate).controller.destroyBlock(hitCoordinate);
+      }
     }
   }
 }
