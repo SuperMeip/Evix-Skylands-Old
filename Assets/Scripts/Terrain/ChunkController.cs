@@ -1,9 +1,15 @@
 ﻿using UnityEngine;
 
+/// <summary>
+/// Controls a chunks in game behaviors
+/// </summary>
 [RequireComponent(typeof(MeshRenderer))]
 [RequireComponent(typeof(MeshCollider))]
 public class ChunkController : MonoBehaviour {
 
+  /// <summary>
+  /// The chunk this is controlling
+  /// </summary>
   public Chunk chunk;
 
 	// Use this for initialization
@@ -23,6 +29,7 @@ public class ChunkController : MonoBehaviour {
     Mesh mesh = GetComponent<MeshFilter>().mesh;
     MeshCollider col = GetComponent<MeshCollider>();
     ChunkMeshGenerator.ChunkMesh meshToUse = chunkMesh ?? (new ChunkMeshGenerator()).generateMeshFor(chunk);
+    chunk.renderMesh = meshToUse;
 
     mesh.Clear();
     mesh.vertices = meshToUse.vertices.ToArray();

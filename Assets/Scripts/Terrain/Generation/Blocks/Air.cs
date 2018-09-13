@@ -1,3 +1,7 @@
-﻿public class Air : Blocks.Block {
-  public Air(Coordinate location, Chunk parent) : base(location, parent, Type.air) {}
+﻿namespace Blocks {
+  public class Air : BlockType {
+    public static new Type type = Type.air;
+
+    public Air() : base(type, false, false){}
+  }
 }

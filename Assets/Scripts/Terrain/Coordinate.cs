@@ -8,12 +8,45 @@ public enum Directions { north, east, south, west, up, down };
 public enum Corners { northEast, northWest, southEast, southWest };
 
 [Serializable]
+public enum Octants {
+  topNorthEast,
+  topNorthWest,
+  topSouthEast,
+  topSouthWest,
+  bottomNorthEast,
+  bottomNorthWest,
+  bottomSouthEast,
+  bottomSouthWest
+};
+
+[Serializable]
 public struct Coordinate {
 
   /// <summary>
   /// All of the directions in order
   /// </summary>
-  public static Directions[] DIRECTIONS = new Directions[6] { Directions.north, Directions.east, Directions.south, Directions.west, Directions.up, Directions.down };
+  public static Directions[] DIRECTIONS = new Directions[6] {
+    Directions.north,
+    Directions.east,
+    Directions.south,
+    Directions.west,
+    Directions.up,
+    Directions.down
+  };
+
+  /// <summary>
+  /// All of the octant corners in order
+  /// </summary>
+  public static Octants[] OCTANTS = new Octants[8] {
+    Octants.topNorthEast,
+    Octants.topNorthWest,
+    Octants.topSouthEast,
+    Octants.topSouthWest,
+    Octants.bottomNorthEast,
+    Octants.bottomNorthWest,
+    Octants.bottomSouthEast,
+    Octants.bottomSouthWest
+  };
 
   // The coordinate values
   /// <summary>
@@ -244,7 +277,10 @@ public struct Coordinate {
       return false;
     }
     Coordinate other = (Coordinate)obj;
-    return x == other.x && y == other.y && z == other.z;
+    return x == other.x 
+      && y == other.y 
+      && z == other.z 
+      && isInitialized == other.isInitialized;
   }
 
   /// <summary>
@@ -275,7 +311,7 @@ public struct Coordinate {
   /// </summary>
   /// <param name="direction"></param>
   /// <returns></returns>
-  public static Directions switchDirection(Directions direction) {
+  public static Directions reverseDirection(Directions direction) {
     switch (direction) {
       case Directions.north:
         return Directions.south;

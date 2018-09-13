@@ -1,5 +1,9 @@
-﻿public class Water : Blocks.Block {
-  public Water(Coordinate location, Chunk parent) : base(location, parent, Type.water) {
-    uvBase = new Coordinate(1, 2);
+﻿namespace Blocks {
+  public class Water : BlockType {
+    public static new Type type = Type.water;
+
+    public Water() : base(type, false, true) {
+      uvBase = new Coordinate(1, 2);
+    }
   }
 }

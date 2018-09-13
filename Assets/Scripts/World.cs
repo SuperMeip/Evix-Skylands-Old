@@ -33,12 +33,12 @@ public class World {
   /// <summary>
   /// The current unique chunk id for chunk generation.
   /// </summary>
-  public int currentChunkID = 0;
+  public int currentChunkID = 1;
 
   /// <summary>
   /// The current unique chunk id for chunk generation.
   /// </summary>
-  public int currentIslandID = 0;
+  public int currentIslandID = 1;
 
   /// <summary>
   /// All the levels indexed by world nexus
@@ -49,6 +49,15 @@ public class World {
   /// The players in this world
   /// </summary>
   public Player[] players = new Player[PLAYER_LIMIT];
+
+  /// <summary>
+  /// Player one, the main player
+  /// </summary>
+  public Player playerOne {
+    get {
+      return players[0];
+    }
+  }
 
   /// <summary>
   /// Instanciate a new world

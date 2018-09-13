@@ -1,5 +1,9 @@
-﻿public class Stone : Blocks.Block {
-  public Stone(Coordinate location, Chunk parent) : base(location, parent, Type.stone) {
-    uvBase = new Coordinate(1, 3);
+﻿namespace Blocks {
+  public class Stone : BlockType {
+    public static new Type type = Type.stone;
+
+    public Stone() : base(type) {
+      uvBase = new Coordinate(1, 3);
+    }
   }
 }

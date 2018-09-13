@@ -7,7 +7,7 @@ using System.Collections.Generic;
 // replaced float values with simple booleans to create slopes
 //
 public class MarchRenderer {
-
+  /*
   public Chunk chunk;
 
   private List<Vector3> vertices;
@@ -506,4 +506,5 @@ public class MarchRenderer {
     mesh.RecalculateBounds();
     return mesh;
   }
+  */
 }

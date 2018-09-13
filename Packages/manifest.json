@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "com.unity.collections": "0.0.9-preview.2",
+    "com.unity.mathematics": "0.0.12-preview.10",
     "com.unity.ads": "2.0.8",
     "com.unity.analytics": "2.0.16",
     "com.unity.package-manager-ui": "1.9.11",

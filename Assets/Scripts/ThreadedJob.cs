@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using UnityEngine;
 
 /// <summary>
 ///  job to be executed in another thread
@@ -6,7 +7,7 @@
 public class ThreadedJob {
   private bool m_IsDone = false;
   private object m_Handle = new object();
-  private System.Threading.Thread m_Thread = null;
+  protected System.Threading.Thread m_Thread = null;
   public bool IsDone {
     get {
       bool tmp;

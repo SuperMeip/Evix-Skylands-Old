@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Unity.Collections;
 
 /// <summary>
 /// A collection of chunks floating in the aether
@@ -7,19 +9,49 @@
 public abstract class Level {
 
   /// <summary>
+  /// A simple struct for objects in the generation output queue
+  /// </summary>
+  public struct GeneratedBlockArray {
+    public List<Blocks.Block> blocks;
+    public Coordinate chunkLocation;
+
+    /// <summary>
+    /// if this block array is in use
+    /// </summary>
+    public bool isEmpty {
+      get {
+        return !chunkLocation.isInitialized;
+      }
+    } 
+
+    /// <summary>
+    /// Set the chunklocation for this generated block
+    /// </summary>
+    /// <param name="location"></param>
+    public void setLocation(Coordinate location) {
+      chunkLocation = location;
+    }
+  }
+
+  /// <summary>
+  /// The max amount of chunks allowed to be queue'd before the cachen needs to be cleared
+  /// </summary>
+  public const int GENERATION_QUEUE_SIZE = 200;
+
+  /// <summary>
   /// X size
   /// </summary>
-  protected int width = Chunk.CHUNK_DIAMETER * 20;
+  protected static int Width = Chunk.CHUNK_DIAMETER * 20;
 
   /// <summary>
   /// y size
   /// </summary>
-  protected int height = Chunk.CHUNK_HEIGHT * 10;
+  protected static int Height = Chunk.CHUNK_HEIGHT * 10;
 
   /// <summary>
   /// z size
   /// </summary>
-  protected int depth = Chunk.CHUNK_DIAMETER * 20;
+  protected static int Depth = Chunk.CHUNK_DIAMETER * 20;
 
   /// <summary>
   /// The world location of the 0,0,0 chunk of this island
@@ -52,22 +84,28 @@ public abstract class Level {
   public int seed { get; private set; }
 
   /// <summary>
-  /// The chunks that make up this island
+  /// The chunks in this level
   /// </summary>
-  [NonSerialized]
   private Chunk[][][] chunks;
+
+  /// <summary>
+  /// enQueue a chunk for block generation
+  /// </summary>
+  /// <param name="chunk">The chunk(.location) to generate at</param>
+  /// <returns></returns>
+  public abstract ThreadedJob queueChunkForGeneration(Chunk chunk);
 
   /// <summary>
   /// Create a new level at the nexus location in the world
   /// </summary>
   /// <param name="world"></param>
   /// <param name="location"></param>
-  public Level(World world, Coordinate location) {
+  protected Level(World world, Coordinate location) {
     this.world = world;
     this.location = location.copy;
-    widthInChunks = (int)Math.Ceiling((double)width / Chunk.CHUNK_DIAMETER);
-    heightInChunks = (int)Math.Ceiling((double)height / Chunk.CHUNK_HEIGHT);
-    depthInChunks = (int)Math.Ceiling((double)width / Chunk.CHUNK_DIAMETER);
+    widthInChunks = (int)Math.Ceiling((double)Width / Chunk.CHUNK_DIAMETER);
+    heightInChunks = (int)Math.Ceiling((double)Height / Chunk.CHUNK_HEIGHT);
+    depthInChunks = (int)Math.Ceiling((double)Depth / Chunk.CHUNK_DIAMETER);
     chunks = createJaggedArray();
     // @todo: update this eventually
     seed = 8675309;

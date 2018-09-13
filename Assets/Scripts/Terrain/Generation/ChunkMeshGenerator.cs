@@ -14,12 +14,14 @@ public class ChunkMeshGenerator {
     public List<int> triangles;
     public List<Vector2> uvs;
     public Coordinate chunkLocation;
+    public bool isValid;
 
     public ChunkMesh(List<Vector3> vertices, List<int> triangles, List<Vector2> uvs, Coordinate chunkLocation) {
       this.vertices = vertices;
       this.triangles = triangles;
       this.uvs = uvs;
       this.chunkLocation = chunkLocation;
+      isValid = true;
     }
   }
 
@@ -82,23 +84,23 @@ public class ChunkMeshGenerator {
     }
     chunk.forEach(
       (Block block) => {
-        if (block.type != Block.Type.air) {
-          if (block.north != null && block.north.type == Block.Type.air) {
+        if (!block.isEmpty) {
+          if (BlockTypes.isEmpty(block.north)) {
             CubeNorth(block.location.x, block.location.y, block.location.z, block);
           }
-          if (block.east != null && block.east.type == Block.Type.air) {
+          if (BlockTypes.isEmpty(block.east)) {
             CubeEast(block.location.x, block.location.y, block.location.z, block);
           }
-          if (block.south != null && block.south.type == Block.Type.air) {
+          if (BlockTypes.isEmpty(block.south)) {
             CubeSouth(block.location.x, block.location.y, block.location.z, block);
           }
-          if (block.west != null && block.west.type == Block.Type.air) {
+          if (BlockTypes.isEmpty(block.west)) {
             CubeWest(block.location.x, block.location.y, block.location.z, block);
           }
-          if (block.up != null && block.up.type == Block.Type.air) {
+          if (BlockTypes.isEmpty(block.up)) {
             CubeTop(block.location.x, block.location.y, block.location.z, block);
           }
-          if (block.down != null && block.down.type == Block.Type.air) {
+          if (BlockTypes.isEmpty(block.down)) {
             CubeBottom(block.location.x, block.location.y, block.location.z, block);
           }
         }
@@ -107,7 +109,7 @@ public class ChunkMeshGenerator {
   }
 
   void Cube(Block block) {
-    Vector2 texturePos = block.isSelected ? tSelected : block.uvBase.vec2;
+    Vector2 texturePos = block.isSelected ? tSelected : BlockTypes.get(block.type).uvBase.vec2;
     chunkMesh.triangles.Add(faceCount * 4); //1
     chunkMesh.triangles.Add(faceCount * 4 + 1); //2
     chunkMesh.triangles.Add(faceCount * 4 + 2); //3

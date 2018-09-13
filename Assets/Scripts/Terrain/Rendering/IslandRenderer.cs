@@ -10,7 +10,7 @@ public class IslandRenderer : MonoBehaviour {
   /// <summary>
   /// The island model
   /// </summary>
-  public Island island;
+  public Island island { get; private set; }
 
   /// <summary>
   /// The chunks used for rendering
@@ -30,7 +30,8 @@ public class IslandRenderer : MonoBehaviour {
   /// <summary>
   /// set up the queues
   /// </summary>
-  void Start() {
+  public void initialize(Island island) {
+    this.island = island;
     chunkRenderQueue = new List<ChunkMeshGenerator.ChunkMesh>();
     chunkMeshGenerationQueue = new List<Coordinate>();
   }
@@ -42,12 +43,15 @@ public class IslandRenderer : MonoBehaviour {
     // Empty the mesh gen queue
     if (chunkMeshGenerationQueue != null && chunkMeshGenerationQueue.Count > 0) {
       chunkMeshGenerationQueue.RemoveAll((Coordinate chunkColumn) => {
-        GenerateChunkColumnMeshsThreaded meshGenJob = new GenerateChunkColumnMeshsThreaded();
-        meshGenJob.columnLocation = chunkColumn;
-        meshGenJob.island = island;
-        meshGenJob.outputQueue = chunkRenderQueue;
-        meshGenJob.Start();
-        return true;
+        if (island.columnHasBeenGenerated(chunkColumn)) {
+          GenerateChunkColumnMeshsJob meshGenJob = new GenerateChunkColumnMeshsJob();
+          meshGenJob.columnLocation = chunkColumn;
+          meshGenJob.island = island;
+          meshGenJob.outputQueue = chunkRenderQueue;
+          meshGenJob.Start();
+          return true;
+        }
+        return false;
       });
     }
     // Empty the render queue
@@ -72,25 +76,12 @@ public class IslandRenderer : MonoBehaviour {
     if (island == null) {
       return;
     }
-    island.generateAroundChunk(player.location.chunkLocation, World.ACTIVE_CHUNKS_RADIUS);
-    Profiler.EndSample();
-
     Coordinate location = new Coordinate(0, 0, 0);
     for (location.x = player.chunk.location.x - World.ACTIVE_CHUNKS_RADIUS; location.x < player.chunk.location.x + World.ACTIVE_CHUNKS_RADIUS; location.x++) {
-      for (location.y = 0; location.y < island.heightInChunks; location.y++) {
-        for (location.z = player.chunk.location.z - World.ACTIVE_CHUNKS_RADIUS; location.z < player.chunk.location.z + World.ACTIVE_CHUNKS_RADIUS; location.z++) {
-          Chunk newChunk = island.getChunk(location);
-          if (newChunk != null && !newChunk.isEmpty && newChunk.hasBeenGenerated) {
-            GameObject chunkObject = Instantiate(ChunkObject, location.vec3 * Chunk.CHUNK_DIAMETER * World.BLOCK_SIZE, new Quaternion(), transform);
-            ChunkController chunkController = chunkObject.GetComponent<ChunkController>();
-            newChunk.controller = chunkController;
-            chunkController.chunk = newChunk;
-            chunkController.renderChunk();
-          }
-        }
+      for (location.z = player.chunk.location.z - World.ACTIVE_CHUNKS_RADIUS; location.z < player.chunk.location.z + World.ACTIVE_CHUNKS_RADIUS; location.z++) {
+        chunkMeshGenerationQueue.Add(location);
       }
     }
-    Profiler.EndSample();
   }
 
   /// <summary>
@@ -102,17 +93,13 @@ public class IslandRenderer : MonoBehaviour {
       return;
     }
     Chunk chunk = island.getChunk(new Coordinate(columnLocation.x, 0, columnLocation.z));
-    if (chunk != null && !chunk.hasBeenGenerated) {
-      // If this column hasn't been generated, start a generation job for it, this will put it in the render queue when it's done.
-      Island.GenerateChunkColumnThreaded columnGenerationJob = new Island.GenerateChunkColumnThreaded();
-      columnGenerationJob.chunk = chunk;
-      columnGenerationJob.island = island;
-      columnGenerationJob.outputQueue = chunkMeshGenerationQueue;
-      columnGenerationJob.Start();
-    } else if (chunk!= null && !chunk.isRendered) {
+    if (chunk != null && !chunk.hasBeenRendered) {
       // if it hasn't been rendered before, toss it in the mesh gen queue.
       // @todo: load mesh from saved memory to optimize maybe
       chunkMeshGenerationQueue.Add(chunk.location);
+    } else if (chunk != null && chunk.hasBeenGenerated && chunk.renderMesh.isValid) {
+      // if it's just been hidden/destroyed re-render it from it's mesh
+      chunkRenderQueue.Add(chunk.renderMesh);
     }
   }
 
@@ -139,7 +126,8 @@ public class IslandRenderer : MonoBehaviour {
   /// <summary>
   /// A threaded job to generate a single column of chunks.
   /// </summary>
-  class GenerateChunkColumnMeshsThreaded : ThreadedJob {
+  class GenerateChunkColumnMeshsJob : ThreadedJob {
+
     /// <summary>
     /// The x and z of the chunk column to generate
     /// </summary>
@@ -159,13 +147,18 @@ public class IslandRenderer : MonoBehaviour {
     /// Generate just the mesh and uv values for the column of chunks
     /// </summary>
     protected override void ThreadFunction() {
+      // @todo: breaks here?
       if (columnLocation.isInitialized && island != null) {
         for (int y = island.heightInChunks - 1; y >= 0; y--) {
           Chunk chunk = island.getChunk(new Coordinate(columnLocation.x, y, columnLocation.z));
-          if (chunk != null && !chunk.isEmpty && chunk.hasBeenGenerated && !chunk.hasBeenRendered) {
-            ChunkMeshGenerator chunkRenderer = new ChunkMeshGenerator();
-            ChunkMeshGenerator.ChunkMesh mesh = chunkRenderer.generateMeshFor(chunk);
-            outputQueue.Add(mesh);
+          if (chunk != null && !chunk.isEmpty) {
+            if (!chunk.hasBeenRendered) {
+              if (chunk.hasBeenGenerated) {
+                ChunkMeshGenerator chunkRenderer = new ChunkMeshGenerator();
+                ChunkMeshGenerator.ChunkMesh mesh = chunkRenderer.generateMeshFor(chunk);
+                outputQueue.Add(mesh);
+              }
+            }
           }
         }
       }

@@ -1,5 +1,9 @@
-﻿public class Sand : Blocks.Block {
-  public Sand(Coordinate location, Chunk parent) : base(location, parent, Type.sand) {
-    uvBase = new Coordinate(2, 3);
+﻿namespace Blocks {
+  public class Sand : BlockType {
+    public static new Type type = Type.sand;
+
+    public Sand() : base(type) {
+      uvBase = new Coordinate(2, 3);
+    }
   }
 }

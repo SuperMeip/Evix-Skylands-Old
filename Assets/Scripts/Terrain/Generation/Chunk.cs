@@ -18,34 +18,6 @@ public class Chunk {
   public const int CHUNK_HEIGHT = CHUNK_DIAMETER;
 
   /// <summary>
-  /// The level this chunk is in
-  /// </summary>
-  public Level level { get; private set; }
-
-  /// <summary>
-  /// Unique ID of this chunk
-  /// </summary>
-  public int id { get; private set; }
-
-  /// <summary>
-  /// The location in the level x, y of this chunk
-  /// </summary>
-  public Coordinate location;
-
-  /// <summary>
-  /// The absolute world location of this chunk
-  /// </summary>
-  public Coordinate worldLocation {
-    get {
-      return new Coordinate(
-        location.x + level.location.x * World.WORLD_NEXUS_LENGTH,
-        location.y + level.location.y * World.WORLD_NEXUS_LENGTH,
-        location.z + level.location.z * World.WORLD_NEXUS_LENGTH
-      );
-    }
-  }
-
-  /// <summary>
   /// If this is the spawn chunk
   /// </summary>
   public bool isSpawn = false;
@@ -71,20 +43,53 @@ public class Chunk {
   public bool hasBeenGenerated = false;
 
   /// <summary>
+  /// The location in the level x, y of this chunk
+  /// </summary>
+  public Coordinate location;
+
+  /// <summary>
   /// The controller of this chunk's gameobject
   /// </summary>
   public ChunkController controller;
 
   /// <summary>
+  /// The chunk's render mesh
+  /// </summary>
+  public ChunkMeshGenerator.ChunkMesh renderMesh;
+
+  /// <summary>
   /// For quick access to the chunks neighboring this one
   /// </summary>
   [NonSerialized]
-  private Chunk[] neighbors;
+  Chunk[] neighbors;
 
   /// <summary>
   /// The blocks in this chunk
   /// </summary>
-  private Block[,,] blocks;
+  Block[][][] blocks;
+
+  /// <summary>
+  /// The level this chunk is in
+  /// </summary>
+  public Level level { get; private set; }
+
+  /// <summary>
+  /// Unique ID of this chunk
+  /// </summary>
+  public int id { get; private set; }
+
+  /// <summary>
+  /// The absolute world location of this chunk
+  /// </summary>
+  public Coordinate worldLocation {
+    get {
+      return new Coordinate(
+        location.x + level.location.x * World.WORLD_NEXUS_LENGTH,
+        location.y + level.location.y * World.WORLD_NEXUS_LENGTH,
+        location.z + level.location.z * World.WORLD_NEXUS_LENGTH
+      );
+    }
+  }
 
   /// <summary>
   /// The chunk to the north
@@ -144,22 +149,7 @@ public class Chunk {
     this.level = level;
     id = level.world.currentChunkID++;
     neighbors = new Chunk[6];
-    initializeChunkBlocks();
-  }
-
-  /// <summary>
-  /// Initialize all blocks in this chunk to default.
-  /// </summary>
-  public void initializeChunkBlocks() {
-    blocks = new Block[CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_HEIGHT];
-    Coordinate location = new Coordinate(0, 0, 0);
-    /*for (location.x = 0; location.x < CHUNK_DIAMETER; location.x++) {
-      for (location.y = 0; location.y < CHUNK_HEIGHT; location.y++) {
-        for (location.z = 0; location.z < CHUNK_DIAMETER; location.z++) {
-          blocks[location.x, location.y, location.z] = new Air(location, this);
-        }
-      }
-    }*/
+    blocks = createJaggedArray();
   }
 
   /// <summary>
@@ -171,7 +161,6 @@ public class Chunk {
     for (location.x = 0; location.x < CHUNK_DIAMETER; location.x++) {
       for (location.y = 0; location.y < CHUNK_HEIGHT; location.y++) {
         for (location.z = 0; location.z < CHUNK_DIAMETER; location.z++) {
-          // @todo: uhhh? does this work with the changing types?
           action(getBlock(location));
         }
       }
@@ -201,44 +190,42 @@ public class Chunk {
   /// Get block at location
   /// </summary>
   /// <param name="blockLocation">the location of the block relative to this chunk</param>
-  /// <returns></returns>
+  /// <returns>The block at location, or an uninitialized block (!Block.isValid) if one wasn't found</returns>
   public Block getBlock(Coordinate blockLocation) {
     // if it's in this chunk
-    if ((blockLocation.x < CHUNK_DIAMETER && blockLocation.x >= 0 )
-      && (blockLocation.y < CHUNK_HEIGHT && blockLocation.y >= 0)
-      && (blockLocation.z < CHUNK_DIAMETER && blockLocation.z >= 0)
-    ) {
-      if (blocks[blockLocation.x, blockLocation.y, blockLocation.z] == null) {
-        setBlock(new Air(blockLocation, this));
-        return blocks[blockLocation.x, blockLocation.y, blockLocation.z];
+    if (blockLocation.isWithinChunkBounds) {
+      // if it's invalid set it to air
+      if (!blocks[blockLocation.x][blockLocation.y][blockLocation.z].isValid) {
+        setBlock(new Block(blockLocation, this, BlockTypes.Air));
+        return blocks[blockLocation.x][blockLocation.y][blockLocation.z];
       }
-      return blocks[blockLocation.x, blockLocation.y, blockLocation.z];
+      return blocks[blockLocation.x][blockLocation.y][blockLocation.z];
     // if it's to the north
     } else if (blockLocation.z >= CHUNK_DIAMETER) {
       blockLocation.z -= CHUNK_DIAMETER;
-      return neighbors[(int)Directions.north] != null ? north.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.north] != null ? north.getBlock(blockLocation) : new Block();
     // if it's to the east
     } else if (blockLocation.x >= CHUNK_DIAMETER) {
       blockLocation.x -= CHUNK_DIAMETER;
-      return neighbors[(int)Directions.east] != null ? east.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.east] != null ? east.getBlock(blockLocation) : new Block();
     // if it's to the south
     } else if (blockLocation.z < 0) {
       blockLocation.z += CHUNK_DIAMETER;
-      return neighbors[(int)Directions.south] != null ? south.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.south] != null ? south.getBlock(blockLocation) : new Block();
     // if it's to the west
     } else if (blockLocation.x < 0) {
       blockLocation.x += CHUNK_DIAMETER;
-      return neighbors[(int)Directions.west] != null ? west.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.west] != null ? west.getBlock(blockLocation) : new Block();
     // if it's above
     } else if (blockLocation.y >= CHUNK_HEIGHT) {
       blockLocation.y -= CHUNK_HEIGHT;
-      return neighbors[(int)Directions.up] != null ? up.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.up] != null ? up.getBlock(blockLocation) : new Block();
     // if it's below
     } else if (blockLocation.y < 0) {
       blockLocation.y += CHUNK_HEIGHT;
-      return neighbors[(int)Directions.down] != null ? down.getBlock(blockLocation) : null;
+      return neighbors[(int)Directions.down] != null ? down.getBlock(blockLocation) : new Block();
     } else {
-      return null;
+      return new Block();
     }
   }
 
@@ -246,36 +233,32 @@ public class Chunk {
   /// Cange the block at location in a chunk
   /// </summary>
   /// <param name="newBlock">The block to replace the current one in the chunk with</param>
+  /// <param name="updateNeighbors">Whether or not to update this block and all it's neighbors as well</param>
   public void updateBlock(Block newBlock) {
-    isEmpty = false;
-    Block oldblock = getBlock(newBlock.location);
-    if (oldblock != null && newBlock.location.isWithinChunkBounds) {
-      // update this block's and the surrounding blocks neigbors
-      newBlock.north = oldblock.north;
-      if (newBlock.north != null) {
-        oldblock.north.south = newBlock;
+    if (newBlock.isValid) {
+      // first, see if this chunk is still empty
+      isEmpty = !isEmpty ? isEmpty : BlockTypes.isEmpty(newBlock.type);
+      newBlock.setParent(this);
+      Block oldBlock = getBlock(newBlock.location);
+      // if the types are different, we need to update the neighbors of this new block, and surrounding blocks
+      if (oldBlock.type != newBlock.type) {
+        newBlock.copyNeighbors(oldBlock);
+        foreach (Directions direction in Coordinate.DIRECTIONS) {
+          // for each neighboring block, if it's valid, set it's neighbor in the oposite direction to this block type
+          Block neighbor = getBlock(newBlock.location.go(direction));
+          if (neighbor.isValid) {
+            neighbor.setNeighbor(Coordinate.reverseDirection(direction), newBlock.type);
+            // if it's not from the current chunk, we need to ask the chunk in that direction from this one to update it.
+            if (neighbor.chunkId != newBlock.chunkId) {
+              getNeighbor(direction).setBlock(neighbor);
+            } else {
+              setBlock(neighbor);
+            }
+          }
+        }
+        // set the new block
+        setBlock(newBlock);
       }
-      newBlock.east = oldblock.east;
-      if (newBlock.east != null) {
-        oldblock.east.west = newBlock;
-      }
-      newBlock.south = oldblock.south;
-      if (newBlock.south != null) {
-        oldblock.south.north = newBlock;
-      }
-      newBlock.west = oldblock.west;
-      if (newBlock.west != null) {
-        oldblock.west.east = newBlock;
-      }
-      newBlock.up = oldblock.up;
-      if (newBlock.up != null) {
-        oldblock.up.down = newBlock;
-      }
-      newBlock.down = oldblock.down;
-      if (newBlock.down != null) {
-        oldblock.down.up = newBlock;
-      }
-      oldblock.chunk.setBlock(newBlock);
     }
   }
 
@@ -284,16 +267,23 @@ public class Chunk {
   /// </summary>
   /// <param name="block">The block to remove</param>
   public void destroyBlock(Block block) {
-    Block emptyBlock = new Air(block.location, this);
-    updateBlock(emptyBlock);
+    setBlock(new Block(block.location, this, BlockTypes.Air));
+  }
+
+  /// <summary>
+  /// Override tostring for chunks
+  /// </summary>
+  /// <returns>The type of chunk and it's world location</returns>
+  public override string ToString() {
+    return (isEmpty ? "Empty @ " : "Land @ ") + location.ToString();
   }
 
   /// <summary>
   /// set the block at it's location
   /// </summary>
   /// <param name="newBlock"></param>
-  private void setBlock(Block newBlock) {
-    blocks[newBlock.location.x, newBlock.location.y, newBlock.location.z] = newBlock;
+  void setBlock(Block newBlock) {
+    blocks[newBlock.location.x][newBlock.location.y][newBlock.location.z] = newBlock;
   }
 
   /// <summary>
@@ -302,7 +292,7 @@ public class Chunk {
   /// <param name="direction">The direction from this chunk of the chunk you want</param>
   /// <param name=forceLoadNeighbor">If a neighbor is null, force load it as a new chunk before checking</param>
   /// <returns>The requested neighnoring chunk</returns>
-  private Chunk getNeighbor(Directions direction, bool forceLoadNeighbor = false) {
+  Chunk getNeighbor(Directions direction, bool forceLoadNeighbor = false) {
     int directionIndex = (int)direction;
     if (neighbors[directionIndex] == null) {
       neighbors[directionIndex] = level.getChunk(location.go(direction), forceLoadNeighbor);
@@ -316,7 +306,7 @@ public class Chunk {
   /// Goes through each direction and sets this neighbor to what it is in the world for quick lookup
   /// This also sets the neighbors of existing neighbors as this to save time.
   /// </summary>
-  public void setNeighbors() {
+  void setNeighbors() {
     foreach(Directions direction in Coordinate.DIRECTIONS) {
       int directionalIndex = (int)direction;
       if (neighbors[directionalIndex] == null) {
@@ -350,10 +340,20 @@ public class Chunk {
   }
 
   /// <summary>
-  /// Override tostring for chunks
+  /// create a jagged chunk array
   /// </summary>
-  /// <returns>The type of chunk and it's world location</returns>
-  public override string ToString() {
-    return (isEmpty ? "Empty @ " : "Land @ ") + location.ToString();
+  /// <returns></returns>
+  Block[][][] createJaggedArray() {
+    Block[][][] blockArray = new Block[CHUNK_DIAMETER][][];
+    for (int x = 0; x < CHUNK_DIAMETER; x++) {
+      var tmp1 = blockArray[x] = new Block[CHUNK_HEIGHT][];
+      for (int y = 0; y < CHUNK_HEIGHT; y++) {
+        var tmp2 = tmp1[y] = new Block[CHUNK_DIAMETER];
+        for (int z = 0; z < CHUNK_DIAMETER; z++) {
+          tmp2[z] = new Block();
+        }
+      }
+    }
+    return blockArray;
   }
 }
