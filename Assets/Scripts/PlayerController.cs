@@ -120,7 +120,7 @@ public class PlayerController : MonoBehaviour {
         ) {
           Chunk newChunk = player.level.chunkAtWorldLocation(player.location);
           if (newChunk != null && newChunk != player.chunk && newChunk.level == player.level) {
-            currentRenderer.renderPositionChange(newChunk, player.chunk);
+            currentRenderer.queueActiveChangesForNewPosition(newChunk, player.chunk);
             player.updateChunk(newChunk);
           }
         }

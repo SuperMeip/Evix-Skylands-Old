@@ -94,7 +94,7 @@ public class WorldGenerator : MonoBehaviour {
   void generateStartingIsland() {
     Island island = world.createNewIsland(new Coordinate(0, 0, 0));
     startingLevel = island;
-    Coordinate chunkColumnLocation = new Coordinate(0, 0);
+    /*Coordinate chunkColumnLocation = new Coordinate(0, 0);
     // queue up generation for all the chunk data for the island
     for (chunkColumnLocation.x = 0; chunkColumnLocation.x < island.widthInChunks; chunkColumnLocation.x++) {
       for (chunkColumnLocation.z = 0; chunkColumnLocation.z < island.depthInChunks; chunkColumnLocation.z++) {
@@ -103,7 +103,8 @@ public class WorldGenerator : MonoBehaviour {
           genJobQueue.Add(generationJob);
         }
       }
-    }
+    }*/
+    island.generateAllChunks();
 
     // create the island world object and set player one's current renderer to it's
     GameObject startingIslandObject = Instantiate(islandObject, island.location.vec3 * World.WORLD_NEXUS_LENGTH * World.BLOCK_SIZE, new Quaternion(), transform);
@@ -113,7 +114,10 @@ public class WorldGenerator : MonoBehaviour {
 
     // queue the chunks around the player for rendering
     world.playerOne.updateLevel(startingLevel);
-    islandRenderer.renderAroundPlayer(world.playerOne);
+    //islandRenderer.renderAroundPlayer(world.playerOne);
+    islandRenderer.setChunkActive = false;
+    islandRenderer.renderAll();
+    islandRenderer.activateAroundPlayer(world.playerOne);
   }
 
   /// <summary>

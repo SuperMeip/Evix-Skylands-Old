@@ -150,6 +150,7 @@ public class Chunk {
     id = level.world.currentChunkID++;
     neighbors = new Chunk[6];
     blocks = createJaggedArray();
+    setNeighbors();
   }
 
   /// <summary>
@@ -239,26 +240,7 @@ public class Chunk {
       // first, see if this chunk is still empty
       isEmpty = !isEmpty ? isEmpty : BlockTypes.isEmpty(newBlock.type);
       newBlock.setParent(this);
-      Block oldBlock = getBlock(newBlock.location);
-      // if the types are different, we need to update the neighbors of this new block, and surrounding blocks
-      if (oldBlock.type != newBlock.type) {
-        newBlock.copyNeighbors(oldBlock);
-        foreach (Directions direction in Coordinate.DIRECTIONS) {
-          // for each neighboring block, if it's valid, set it's neighbor in the oposite direction to this block type
-          Block neighbor = getBlock(newBlock.location.go(direction));
-          if (neighbor.isValid) {
-            neighbor.setNeighbor(Coordinate.reverseDirection(direction), newBlock.type);
-            // if it's not from the current chunk, we need to ask the chunk in that direction from this one to update it.
-            if (neighbor.chunkId != newBlock.chunkId) {
-              getNeighbor(direction).setBlock(neighbor);
-            } else {
-              setBlock(neighbor);
-            }
-          }
-        }
-        // set the new block
-        setBlock(newBlock);
-      }
+      setBlock(newBlock);
     }
   }
 
@@ -310,31 +292,10 @@ public class Chunk {
     foreach(Directions direction in Coordinate.DIRECTIONS) {
       int directionalIndex = (int)direction;
       if (neighbors[directionalIndex] == null) {
-        neighbors[directionalIndex] = level.getChunk(location.go(direction));
-        if (neighbors[directionalIndex] != null) {
-          switch (direction) {
-            case Directions.north:
-              neighbors[directionalIndex].south = this;
-              break;
-            case Directions.east:
-              neighbors[directionalIndex].west = this;
-              break;
-            case Directions.south:
-              neighbors[directionalIndex].north = this;
-              break;
-            case Directions.west:
-              neighbors[directionalIndex].east = this;
-              break;
-            case Directions.up:
-              neighbors[directionalIndex].up = this;
-              break;
-            case Directions.down:
-              neighbors[directionalIndex].down = this;
-              break;
-            default:
-              break;
-          }
-        }
+        neighbors[directionalIndex] = level.getChunk(location.go(direction), false);
+      }
+      if (neighbors[directionalIndex] != null) {
+        neighbors[directionalIndex].setNeighbor(direction, this);
       }
     }
   }

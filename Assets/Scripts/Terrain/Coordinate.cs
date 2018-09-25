@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using System.Collections.Generic;
 
 [Serializable]
 public enum Directions { north, east, south, west, up, down };
@@ -304,6 +305,34 @@ public struct Coordinate {
       + Mathf.Pow(y - otherPoint.y, 2)
       + Mathf.Pow(z - otherPoint.z, 2)
     );
+  }
+
+  /// <summary>
+  /// 
+  /// </summary>
+  /// <param name="to"></param>
+  /// <returns></returns>
+  public Directions[] getDirectionsTo(Coordinate otherPoint) {
+    List<Directions> directions = new List<Directions>();
+    if (otherPoint.x < x) {
+      directions.Add(Directions.west);
+    }
+    if (otherPoint.x > x) {
+      directions.Add(Directions.east);
+    }
+    if (otherPoint.y < y) {
+      directions.Add(Directions.down);
+    }
+    if (otherPoint.y > y) {
+      directions.Add(Directions.up);
+    }
+    if (otherPoint.z < z) {
+      directions.Add(Directions.south);
+    }
+    if (otherPoint.z > z) {
+      directions.Add(Directions.north);
+    }
+    return directions.ToArray();
   }
 
   /// <summary>

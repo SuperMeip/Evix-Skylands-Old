@@ -12,16 +12,6 @@ public class ChunkController : MonoBehaviour {
   /// </summary>
   public Chunk chunk;
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
   /// <summary>
   /// Render this chunk using the given mesh
   /// </summary>

@@ -190,11 +190,6 @@ namespace Blocks {
     public bool isSelected;
 
     /// <summary>
-    /// For quick access to the blocks neighboring this one without accessing world
-    /// </summary>
-    Type[] neighbors;
-
-    /// <summary>
     /// The id of the parent chunk of this block
     /// </summary>
     public int chunkId { get; private set; }
@@ -210,13 +205,18 @@ namespace Blocks {
     public Coordinate location { get; private set; }
 
     /// <summary>
+    /// If this was initialized or not.
+    /// </summary>
+    bool wasInitialized;
+
+    /// <summary>
     /// If this is a valid, initialized block
     /// </summary>
     public bool isValid {
       get {
-        return location.isInitialized 
-          && location.isWithinChunkBounds 
-          && neighbors != null;
+        return location.isInitialized
+          && location.isWithinChunkBounds
+          && wasInitialized;
       }
     }
 
@@ -228,6 +228,72 @@ namespace Blocks {
         return !isValid || BlockTypes.isEmpty(type);
       }
     }
+
+    /// <summary>
+    /// if the block is at the same location in the same chunk
+    /// </summary>
+    /// <param name="obj" type="Block">A block to compare</param>
+    /// <returns></returns>
+    public override bool Equals(object obj) {
+      var other = (Block)obj;
+      return location.Equals(other.location)
+        && chunkId == other.chunkId
+        && type == other.type;
+    }
+
+    /// <summary>
+    /// Make a new block
+    /// </summary>
+    /// <param name="location">The location in the chunk of this block</param>
+    /// <param name="parent">The parent chunk of this block</param>
+    /// <param name="type">The type of this block</param>
+    /// <returns>A new block of the requested type</returns>
+    public Block(Coordinate location, Chunk parent, BlockType type) {
+      chunkId = parent.id;
+      this.location = location;
+      this.type = type.value;
+      isSelected = false;
+      wasInitialized = true;
+    }
+
+    /// <summary>
+    /// Make a new block
+    /// </summary>
+    /// <param name="location">The location in the chunk of this block</param>
+    /// <param name="type">The type of this block</param>
+    /// <returns>A new block of the requested type</returns>
+    public Block(Coordinate location, BlockType type) {
+      chunkId = 0;
+      this.location = location;
+      this.type = type.value;
+      isSelected = false;
+      wasInitialized = true;
+    }
+
+    /// <summary>
+    /// Th block in the direction in the chunk
+    /// </summary>
+    /// <param name="direction">The direction to grab the block in</param>
+    /// <param name="inChunk">the chunk this block is in</param>
+    public Block toThe(Directions direction, Chunk inChunk) {
+      return inChunk.getBlock(location.go(direction));
+    }
+
+    /// <summary>
+    /// Set the parent to the given chunk
+    /// </summary>
+    /// <param name="parent"></param>
+    public void setParent(Chunk parent) {
+      chunkId = parent.id;
+      wasInitialized = true;
+    }
+  }
+}
+    /*
+    /// <summary>
+    /// For quick access to the blocks neighboring this one without accessing world
+    /// </summary>
+    Type[] neighbors;
 
     /// <summary>
     /// The block to the north
@@ -278,60 +344,11 @@ namespace Blocks {
     }
 
     /// <summary>
-    /// if the block is at the same location in the same chunk
-    /// </summary>
-    /// <param name="obj" type="Block">A block to compare</param>
-    /// <returns></returns>
-    public override bool Equals(object obj) {
-      var other = (Block)obj;
-      return location.Equals(other.location) 
-        && chunkId == other.chunkId
-        && type == other.type;
-    }
-
-    /// <summary>
-    /// Make a new block
-    /// </summary>
-    /// <param name="location">The location in the chunk of this block</param>
-    /// <param name="parent">The parent chunk of this block</param>
-    /// <param name="type">The type of this block</param>
-    /// <returns>A new block of the requested type</returns>
-    public Block(Coordinate location, Chunk parent, BlockType type) {
-      chunkId = parent.id;
-      this.location = location;
-      this.type = type.value;
-      isSelected = false;
-      neighbors = new Type[6];
-    }
-    
-    /// <summary>
-    /// Make a new block
-    /// </summary>
-    /// <param name="location">The location in the chunk of this block</param>
-    /// <param name="type">The type of this block</param>
-    /// <returns>A new block of the requested type</returns>
-    public Block(Coordinate location, BlockType type) {
-      chunkId = 0;
-      this.location = location;
-      this.type = type.value;
-      isSelected = false;
-      neighbors = new Type[6];
-    }
-
-    /// <summary>
     /// Copy neighbors from another block
     /// </summary>
     /// <param name="blockToCopyFrom"></param>
     public void copyNeighbors(Block blockToCopyFrom) {
       neighbors = blockToCopyFrom.neighbors;
-    }
-
-    /// <summary>
-    /// Set the parent to the given chunk
-    /// </summary>
-    /// <param name="parent"></param>
-    public void setParent(Chunk parent) {
-      chunkId = parent.id;
     }
 
     /// <summary>
@@ -364,5 +381,4 @@ namespace Blocks {
       int directionIndex = (int)direction;
       return neighbors[directionIndex];
     }
-  }
-}
+  }*/

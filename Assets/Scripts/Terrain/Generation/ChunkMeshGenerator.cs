@@ -85,22 +85,22 @@ public class ChunkMeshGenerator {
     chunk.forEach(
       (Block block) => {
         if (!block.isEmpty) {
-          if (BlockTypes.isEmpty(block.north)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.north, chunk).type)) {
             CubeNorth(block.location.x, block.location.y, block.location.z, block);
           }
-          if (BlockTypes.isEmpty(block.east)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.east, chunk).type)) {
             CubeEast(block.location.x, block.location.y, block.location.z, block);
           }
-          if (BlockTypes.isEmpty(block.south)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.south, chunk).type)) {
             CubeSouth(block.location.x, block.location.y, block.location.z, block);
           }
-          if (BlockTypes.isEmpty(block.west)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.west, chunk).type)) {
             CubeWest(block.location.x, block.location.y, block.location.z, block);
           }
-          if (BlockTypes.isEmpty(block.up)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.up, chunk).type)) {
             CubeTop(block.location.x, block.location.y, block.location.z, block);
           }
-          if (BlockTypes.isEmpty(block.down)) {
+          if (BlockTypes.isEmpty(block.toThe(Directions.down, chunk).type)) {
             CubeBottom(block.location.x, block.location.y, block.location.z, block);
           }
         }

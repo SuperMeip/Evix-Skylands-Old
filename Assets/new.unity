@@ -162,6 +162,11 @@ Prefab:
       propertyPath: playerObject
       value: 
       objectReference: {fileID: 454502692}
+    - target: {fileID: 114230779808150030, guid: 0e4fc14869651ec4397211c3544708ea,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0e4fc14869651ec4397211c3544708ea, type: 2}
   m_IsPrefabAsset: 0
@@ -175,7 +180,7 @@ GameObject:
   - component: {fileID: 736032017}
   - component: {fileID: 736032016}
   m_Layer: 0
-  m_Name: Directional Light
+  m_Name: Sol
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -269,6 +274,26 @@ Prefab:
     - target: {fileID: 4202556290719862, guid: 013367e5f3fb46544bb0682b5e97e040, type: 2}
       propertyPath: m_RootOrder
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 20911022581945356, guid: 013367e5f3fb46544bb0682b5e97e040,
+        type: 2}
+      propertyPath: m_AllowMSAA
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 20911022581945356, guid: 013367e5f3fb46544bb0682b5e97e040,
+        type: 2}
+      propertyPath: m_HDR
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 20911022581945356, guid: 013367e5f3fb46544bb0682b5e97e040,
+        type: 2}
+      propertyPath: m_OcclusionCulling
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 20911022581945356, guid: 013367e5f3fb46544bb0682b5e97e040,
+        type: 2}
+      propertyPath: m_ClearFlags
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 013367e5f3fb46544bb0682b5e97e040, type: 2}

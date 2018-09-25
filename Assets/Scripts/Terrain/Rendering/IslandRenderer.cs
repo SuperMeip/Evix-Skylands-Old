@@ -18,6 +18,11 @@ public class IslandRenderer : MonoBehaviour {
   public GameObject ChunkObject;
 
   /// <summary>
+  /// Wether to set chunks active on creation
+  /// </summary>
+  public bool setChunkActive = true;
+
+  /// <summary>
   /// The chunk meshes ready to render queue for multhreading
   /// </summary>
   List<ChunkMeshGenerator.ChunkMesh> chunkRenderQueue;
@@ -28,16 +33,37 @@ public class IslandRenderer : MonoBehaviour {
   List<Coordinate> chunkMeshGenerationQueue;
 
   /// <summary>
+  /// The chunks to activate and deactivate with multithread safety
+  /// </summary>
+  List<chunkActivationQueueObject> chunkActivationQueue;
+
+  /// <summary>
+  /// An object for queueing chunk activation and deactivation
+  /// </summary>
+  struct chunkActivationQueueObject {
+    /// <summary>
+    /// The location of the chunk to toggle activation for
+    /// </summary>
+    public Coordinate chunkLocation;
+
+    /// <summary>
+    /// What to set the active of the chunk to
+    /// </summary>
+    public bool setActiveTo;
+  }
+
+  /// <summary>
   /// set up the queues
   /// </summary>
   public void initialize(Island island) {
     this.island = island;
     chunkRenderQueue = new List<ChunkMeshGenerator.ChunkMesh>();
     chunkMeshGenerationQueue = new List<Coordinate>();
+    chunkActivationQueue = new List<chunkActivationQueueObject>();
   }
 
   /// <summary>
-  /// Run a job to render each column of chunks in the queue.
+  /// Run a jobs to empty async queues
   /// </summary>
   void Update() {
     // Empty the mesh gen queue
@@ -54,15 +80,21 @@ public class IslandRenderer : MonoBehaviour {
         return false;
       });
     }
-    // Empty the render queue
+    // render one chunk a frame
     if (chunkRenderQueue != null && chunkRenderQueue.Count > 0) {
-      chunkRenderQueue.RemoveAll((ChunkMeshGenerator.ChunkMesh chunkMesh) => {
-        GameObject currentChunk = Instantiate(ChunkObject, chunkMesh.chunkLocation.vec3 * Chunk.CHUNK_DIAMETER * World.BLOCK_SIZE, new Quaternion(), transform);
-        ChunkController chunkController = currentChunk.GetComponent<ChunkController>();
-        chunkController.chunk = island.getChunk(chunkMesh.chunkLocation, true);
-        chunkController.chunk.controller = chunkController;
-        chunkController.renderChunk(chunkMesh);
-        return true;
+      ChunkMeshGenerator.ChunkMesh chunkMesh = chunkRenderQueue[0];
+      GameObject currentChunk = Instantiate(ChunkObject, chunkMesh.chunkLocation.vec3 * Chunk.CHUNK_DIAMETER * World.BLOCK_SIZE, new Quaternion(), transform);
+      ChunkController chunkController = currentChunk.GetComponent<ChunkController>();
+      chunkController.chunk = island.getChunk(chunkMesh.chunkLocation, true);
+      chunkController.chunk.controller = chunkController;
+      chunkController.renderChunk(chunkMesh);
+      currentChunk.SetActive(setChunkActive);
+      chunkRenderQueue.RemoveAt(0);
+    }
+    // Empty the activation/deactivation queue
+    if (chunkActivationQueue != null && chunkActivationQueue.Count > 0) {
+      chunkActivationQueue.RemoveAll((chunkActivationQueueObject queueObject) => {
+        return toggleChunkActive(queueObject.chunkLocation, queueObject.setActiveTo);
       });
     }
   }
@@ -85,40 +117,117 @@ public class IslandRenderer : MonoBehaviour {
   }
 
   /// <summary>
-  /// Enqueue a column of chunks at location for rendering
+  /// Activate inactive chunks around the given player
   /// </summary>
-  /// <param name="columnLocation">The x and z of the column of chunks to render</param>
-  public void renderChunkColumn(Coordinate columnLocation) {
-    if (island == null || !columnLocation.isInitialized) {
+  /// <param name="player"></param>
+  public void activateAroundPlayer(Player player) {
+    if (island == null) {
       return;
     }
-    Chunk chunk = island.getChunk(new Coordinate(columnLocation.x, 0, columnLocation.z));
-    if (chunk != null && !chunk.hasBeenRendered) {
-      // if it hasn't been rendered before, toss it in the mesh gen queue.
-      // @todo: load mesh from saved memory to optimize maybe
-      chunkMeshGenerationQueue.Add(chunk.location);
-    } else if (chunk != null && chunk.hasBeenGenerated && chunk.renderMesh.isValid) {
-      // if it's just been hidden/destroyed re-render it from it's mesh
-      chunkRenderQueue.Add(chunk.renderMesh);
+    Coordinate location = new Coordinate(0, 0, 0);
+    for (location.x = player.chunk.location.x - World.ACTIVE_CHUNKS_RADIUS; location.x <= player.chunk.location.x + World.ACTIVE_CHUNKS_RADIUS; location.x++) {
+      for (location.z = player.chunk.location.z - World.ACTIVE_CHUNKS_RADIUS; location.z <= player.chunk.location.z + World.ACTIVE_CHUNKS_RADIUS; location.z++) {
+        queueColumnForActivation(location);
+      }
     }
   }
 
   /// <summary>
-  /// Destroy a column of chunks
+  /// Queue up one column of chunks at the given location x,z for deactivation
   /// </summary>
-  /// <param name="columnLocation">The x and z of the column of chunks to de-render</param>
-  public void deRenderChunkColumn(Coordinate columnLocation) {
-    if (island == null || !columnLocation.isInitialized) {
+  /// <param name="columnLocation"></param>
+  public void queueColumnForActivation(Coordinate columnLocation) {
+    for (columnLocation.y = 0; columnLocation.y < Chunk.CHUNK_HEIGHT; columnLocation.y++) {
+      chunkActivationQueue.Add(new chunkActivationQueueObject() {
+        chunkLocation = columnLocation,
+        setActiveTo = true
+      });
+    }
+  }
+
+  /// <summary>
+  /// Queue up one column of chunks forat the given location x,z for activation
+  /// </summary>
+  /// <param name="columnLocation"></param>
+  public void queueColumnForDeActivation(Coordinate columnLocation) {
+    for (columnLocation.y = 0; columnLocation.y < Chunk.CHUNK_HEIGHT; columnLocation.y++) {
+      chunkActivationQueue.Add(new chunkActivationQueueObject() {
+        chunkLocation = columnLocation,
+        setActiveTo = false
+      });
+    }
+  }
+
+  /// <summary>
+  /// Toggle the chunk active or inactive in unityengine
+  /// </summary>
+  /// <param name="location">the chunk to toggle's logaction</param>
+  /// <param name="setActiveTo">whether to set it active or inactive, toggles to oposite by default</param>
+  /// <returns>True if it worked, false if the chunk isn't valid for toggling atm</returns>
+  bool toggleChunkActive(Coordinate location, bool? setActiveTo = null) {
+    Chunk chunkToActivate = island.getChunk(location);
+    if (chunkToActivate != null && chunkToActivate.hasBeenRendered && chunkToActivate.controller != null) {
+      if (setActiveTo == null) {
+        setActiveTo = !chunkToActivate.controller.gameObject.activeSelf;
+      }
+      chunkToActivate.controller.gameObject.SetActive((bool)setActiveTo);
+      return true;
+    }
+    return false;
+  }
+
+  /// <summary>
+  /// Queue up the correct chunk columns for activation and deactivation around the player when they change chunks
+  /// </summary>
+  /// <param name=""></param>
+  /// <param name=""></param>
+  public void queueActiveChangesForNewPosition(Chunk newChunk, Chunk oldChunk) {
+    if (newChunk.level == island && oldChunk.level == island && !oldChunk.location.Equals(newChunk.location)) {
+      List<Coordinate> columnsToRender = new List<Coordinate>();
+      List<Coordinate> columnsToDeRender = new List<Coordinate>();
+      Directions[] directionsMoved = oldChunk.location.getDirectionsTo(newChunk.location);
+      foreach (Directions direction in directionsMoved) {
+        switch (direction) {
+          case Directions.north:
+            for (int x = newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x <= newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
+              queueColumnForActivation(new Coordinate(x, 0, newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS));
+              queueColumnForDeActivation(new Coordinate(x, 0, oldChunk.location.z - World.ACTIVE_CHUNKS_RADIUS));
+            }
+            break;
+          case Directions.south:
+            for (int x = newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x <= newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
+              queueColumnForActivation(new Coordinate(x, 0, newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS));
+              queueColumnForDeActivation(new Coordinate(x, 0, oldChunk.location.z + World.ACTIVE_CHUNKS_RADIUS));
+            }
+            break;
+          case Directions.east:
+            for (int z = newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z <= newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
+              queueColumnForActivation(new Coordinate(newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS, 0, z));
+              queueColumnForDeActivation(new Coordinate(oldChunk.location.x - World.ACTIVE_CHUNKS_RADIUS, 0, z));
+            }
+            break;
+          case Directions.west:
+            for (int z = newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z <= newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
+              queueColumnForActivation(new Coordinate(newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS, 0, z));
+              queueColumnForDeActivation(new Coordinate(oldChunk.location.x + World.ACTIVE_CHUNKS_RADIUS, 0, z));
+            }
+            break;
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Queue the whole island for render
+  /// </summary>
+  public void renderAll() {
+    if (island == null) {
       return;
     }
-    Coordinate location = new Coordinate(columnLocation.x, 0, columnLocation.z);
-    for (location.y = island.heightInChunks - 1; location.y >= 0; location.y--) {
-      Chunk chunk = island.getChunk(location, false);
-      if (chunk != null) {
-        if (chunk.controller != null && chunk.isRendered) {
-          chunk.isRendered = false;
-          Destroy(chunk.controller.gameObject);
-        }
+    Coordinate location = new Coordinate(0, 0, 0);
+    for (location.x = 0; location.x < island.widthInChunks; location.x++) {
+      for (location.z = 0; location.z < island.depthInChunks; location.z++) {
+        chunkMeshGenerationQueue.Add(location);
       }
     }
   }
@@ -161,73 +270,6 @@ public class IslandRenderer : MonoBehaviour {
             }
           }
         }
-      }
-    }
-  }
-
-  /// <summary>
-  /// Queue up the correct chunk columns for rendering around the player when they change chunks
-  /// </summary>
-  /// <param name=""></param>
-  /// <param name=""></param>
-  public void renderPositionChange(Chunk newChunk, Chunk oldChunk) {
-    if (newChunk.level == island && oldChunk.level == island && !oldChunk.location.Equals(newChunk.location)) {
-      Directions direction;
-      // @todo: the parts of the switch below can probably just be brought up in here:
-      if (newChunk.location.x < oldChunk.location.x) {
-        direction = Directions.west;
-      } else if (newChunk.location.x > oldChunk.location.x) {
-        direction = Directions.east;
-      } else if (newChunk.location.z < oldChunk.location.z) {
-        direction = Directions.south;
-      } else if (newChunk.location.z > oldChunk.location.z) {
-        direction = Directions.north;
-      } else {
-        return;
-      }
-      List<Coordinate> columnsToRender = new List<Coordinate>();
-      List<Coordinate> columnsToDeRender = new List<Coordinate>();
-      switch (direction) {
-        case Directions.north:
-          for (int x = newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x < newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
-            columnsToRender.Add(new Coordinate(x, newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS));
-          }
-          for (int x = oldChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x < oldChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
-            columnsToDeRender.Add(new Coordinate(x, oldChunk.location.z - World.ACTIVE_CHUNKS_RADIUS));
-          }
-          break;
-        case Directions.east:
-          for (int z = newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z < newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
-            columnsToRender.Add(new Coordinate(newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS, z));
-          }
-          for (int z = oldChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z < oldChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
-            columnsToDeRender.Add(new Coordinate(oldChunk.location.x - World.ACTIVE_CHUNKS_RADIUS, z));
-          }
-          break;
-        case Directions.south:
-          for (int x = newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x < newChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
-            columnsToRender.Add(new Coordinate(x, newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS));
-          }
-          for (int x = oldChunk.location.x - World.ACTIVE_CHUNKS_RADIUS; x < oldChunk.location.x + World.ACTIVE_CHUNKS_RADIUS; x++) {
-            columnsToDeRender.Add(new Coordinate(x, oldChunk.location.z + World.ACTIVE_CHUNKS_RADIUS));
-          }
-          break;
-        case Directions.west:
-          for (int z = newChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z < newChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
-            columnsToRender.Add(new Coordinate(newChunk.location.x - World.ACTIVE_CHUNKS_RADIUS, z));
-          }
-          for (int z = oldChunk.location.z - World.ACTIVE_CHUNKS_RADIUS; z < oldChunk.location.z + World.ACTIVE_CHUNKS_RADIUS; z++) {
-            columnsToDeRender.Add(new Coordinate(oldChunk.location.x + World.ACTIVE_CHUNKS_RADIUS, z));
-          }
-          break;
-        default:
-          return;
-      }
-      foreach (Coordinate columnToRender in columnsToRender) {
-        renderChunkColumn(columnToRender);
-      }
-      foreach (Coordinate columnToDeRender in columnsToDeRender) {
-        deRenderChunkColumn(columnToDeRender);
       }
     }
   }

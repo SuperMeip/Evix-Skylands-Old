@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using Unity.Collections;
 
 /// <summary>
 /// A collection of chunks floating in the aether
@@ -9,37 +7,12 @@ using Unity.Collections;
 public abstract class Level {
 
   /// <summary>
-  /// A simple struct for objects in the generation output queue
-  /// </summary>
-  public struct GeneratedBlockArray {
-    public List<Blocks.Block> blocks;
-    public Coordinate chunkLocation;
-
-    /// <summary>
-    /// if this block array is in use
-    /// </summary>
-    public bool isEmpty {
-      get {
-        return !chunkLocation.isInitialized;
-      }
-    } 
-
-    /// <summary>
-    /// Set the chunklocation for this generated block
-    /// </summary>
-    /// <param name="location"></param>
-    public void setLocation(Coordinate location) {
-      chunkLocation = location;
-    }
-  }
-
-  /// <summary>
   /// The max amount of chunks allowed to be queue'd before the cachen needs to be cleared
   /// </summary>
   public const int GENERATION_QUEUE_SIZE = 200;
 
   /// <summary>
-  /// X size
+  /// x size
   /// </summary>
   protected static int Width = Chunk.CHUNK_DIAMETER * 20;
 
@@ -52,6 +25,16 @@ public abstract class Level {
   /// z size
   /// </summary>
   protected static int Depth = Chunk.CHUNK_DIAMETER * 20;
+
+  /// <summary>
+  /// If the island has finished generating all chunks
+  /// </summary>
+  public bool isFinishedGenerating { get; protected set; }
+
+  /// <summary>
+  /// The chunks in this level
+  /// </summary>
+  Chunk[][][] chunks;
 
   /// <summary>
   /// The world location of the 0,0,0 chunk of this island
@@ -84,16 +67,16 @@ public abstract class Level {
   public int seed { get; private set; }
 
   /// <summary>
-  /// The chunks in this level
-  /// </summary>
-  private Chunk[][][] chunks;
-
-  /// <summary>
   /// enQueue a chunk for block generation
   /// </summary>
   /// <param name="chunk">The chunk(.location) to generate at</param>
   /// <returns></returns>
   public abstract ThreadedJob queueChunkForGeneration(Chunk chunk);
+
+  /// <summary>
+  /// Generate all of the chunks in the level.
+  /// </summary>
+  public abstract void generateAllChunks();
 
   /// <summary>
   /// Create a new level at the nexus location in the world
